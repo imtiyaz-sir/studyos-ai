@@ -13,11 +13,9 @@ export default function ForgotPassword() {
 
     try {
       const data = await api.forgotPassword(email);
-      const link = `${window.location.origin}/reset-password?token=${data.token}`;
+     const link = `${window.location.origin}/reset-password?token=${data.token}`;
 
-setMessage("Password reset link generated.");
-
-console.log("Reset Link:", link);
+window.location.href = link;
     } catch (err) {
       setError(err.message);
     }
