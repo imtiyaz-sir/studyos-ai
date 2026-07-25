@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from flask_cors_lite import cors_after_request  # tiny local shim, see file for why
 
 from database import init_db
+from routes.admin import admin_bp
 from auth import auth_bp
 from routes.subjects import subjects_bp
 from routes.tasks import tasks_bp
@@ -30,7 +31,7 @@ def create_app():
 
     for bp in (
         auth_bp, subjects_bp, tasks_bp, revision_bp, practice_bp, habits_bp,
-        skills_bp, goals_bp, notes_bp, calendar_bp, exams_bp, dashboard_bp, ai_bp,
+        skills_bp, goals_bp, notes_bp, calendar_bp, exams_bp, dashboard_bp, ai_bp, admin_bp,
     ):
         app.register_blueprint(bp)
 

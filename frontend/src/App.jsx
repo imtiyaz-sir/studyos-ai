@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext";
 import AppShell from "./components/AppShell";
 import Loader from "./components/Loader";
 
+import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Subjects from "./pages/Subjects";
@@ -42,6 +43,7 @@ export default function App() {
       />
 <Route path="/forgot-password" element={<ForgotPassword />} />
 <Route path="/reset-password" element={<ResetPassword />} />
+<Route path="admin" element={<Admin />} />
       <Route
         element={
           <RequireAuth>
