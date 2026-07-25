@@ -1,3 +1,4 @@
+import ResetPassword from "./pages/ResetPassword";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import AppShell from "./components/AppShell";
@@ -20,6 +21,7 @@ import Analytics from "./pages/Analytics";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -38,7 +40,8 @@ export default function App() {
         path="/login"
         element={loading ? <Loader full /> : user ? <Navigate to="/" replace /> : <Login />}
       />
-
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
       <Route
         element={
           <RequireAuth>
@@ -47,6 +50,7 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+       
         <Route path="subjects" element={<Subjects />} />
         <Route path="subjects/:id" element={<SubjectDetail />} />
         <Route path="syllabus" element={<Syllabus />} />

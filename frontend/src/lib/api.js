@@ -38,6 +38,17 @@ export const api = {
   post: (path, body) => request(path, { method: "POST", body }),
   put: (path, body) => request(path, { method: "PUT", body }),
   del: (path) => request(path, { method: "DELETE" }),
+ forgotPassword: (email) =>
+  request("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  }),
+
+resetPassword: (token, password) =>
+  request("/api/auth/reset-password", {
+    method: "POST",
+    body: { token, password },
+  }),
 };
 
 export { ApiError };

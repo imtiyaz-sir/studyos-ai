@@ -3,6 +3,8 @@ auth.py — minimal session-based auth (no Flask-Login dependency needed,
 since only Flask itself is guaranteed available). Uses Flask's signed
 session cookie to store `user_id`, and werkzeug for password hashing.
 """
+import secrets
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -99,3 +101,68 @@ def update_me():
         (session["user_id"],), one=True,
     )
     return jsonify({"user": user})
+@auth_bp.post("/forgot-password")
+def forgot_password():
+    data = request.get_json(force=True) or {}
+    email = (data.get("email") or "").strip().lower()
+
+    user = query("SELECT id FROM users WHERE email = ?", (email,), one=True)
+
+    if not user:
+        return jsonify({
+            "error": "No account found with this email."
+        }), 404
+
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(minutes=30)
+
+    execute(
+        "INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)",
+        (user["id"], token, expires.isoformat())
+    )
+
+    return jsonify({
+        "message": "Password reset token generated.",
+        "token": token
+    })
+
+
+@auth_bp.post("/reset-password")
+def reset_password():
+    data = request.get_json(force=True) or {}
+
+    token = data.get("token")
+    password = data.get("password")
+
+    if not token or not password or len(password) < 6:
+        return jsonify({
+            "error": "Valid token and password (6+ characters) required."
+        }), 400
+
+    reset = query(
+        "SELECT * FROM password_resets WHERE token = ?",
+        (token,),
+        one=True
+    )
+
+    if not reset:
+        return jsonify({
+            "error": "Invalid reset token."
+        }), 400
+
+    execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (
+            generate_password_hash(password),
+            reset["user_id"]
+        )
+    )
+
+    execute(
+        "DELETE FROM password_resets WHERE token = ?",
+        (token,)
+    )
+
+    return jsonify({
+        "message": "Password changed successfully."
+    })

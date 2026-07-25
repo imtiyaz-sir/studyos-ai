@@ -102,10 +102,20 @@ export default function Login() {
           </form>
 
           {mode === "login" && (
-            <p className="text-xs text-ink-faint text-center mt-4">
-              Demo account is pre-filled — just hit sign in.
-            </p>
-          )}
+  <div className="mt-4 text-center space-y-2">
+    <button
+      type="button"
+      onClick={() => navigate("/forgot-password")}
+      className="text-sm text-accent hover:underline"
+    >
+      Forgot Password?
+    </button>
+
+    <p className="text-xs text-ink-faint">
+      Demo account is pre-filled — just hit sign in.
+    </p>
+  </div>
+)}
         </div>
       </div>
     </div>

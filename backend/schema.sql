@@ -22,6 +22,13 @@ CREATE TABLE IF NOT EXISTS users (
     created_at      TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS password_resets (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token       TEXT NOT NULL UNIQUE,
+    expires_at  TEXT NOT NULL,
+    created_at  TEXT DEFAULT (datetime('now'))
+);
 -- ─────────────────────────────────────────────────────────
 -- SYLLABUS HIERARCHY: subjects → units → topics
 -- (chapters/subtopics collapse into `topics` via parent_topic_id
