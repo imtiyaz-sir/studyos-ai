@@ -29,7 +29,7 @@ export default function ResetPassword() {
 
     try {
       const data = await api.resetPassword(token, password);
-      setMessage(data.message);
+      setMessage("Password changed successfully. Redirecting to login...");
 
       setTimeout(() => {
         navigate("/login");
