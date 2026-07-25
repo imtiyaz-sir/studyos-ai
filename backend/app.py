@@ -23,11 +23,11 @@ def create_app():
     app = Flask(__name__)
    
     app.config.update(
-    SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret-change-me"),
-    SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-)
+        SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret-change-me"),
+        SESSION_COOKIE_SAMESITE="None",
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+    )
 
     for bp in (
         auth_bp, subjects_bp, tasks_bp, revision_bp, practice_bp, habits_bp,
@@ -36,12 +36,12 @@ def create_app():
         app.register_blueprint(bp)
 
     cors_after_request(
-    app,
-    origins=[
-        "http://localhost:5173",
-        os.environ.get("FRONTEND_ORIGIN", "https://studyos-ai-psi.vercel.app"),
-    ],
-)
+        app,
+        origins=[
+            "http://localhost:5173",
+            os.environ.get("FRONTEND_ORIGIN", "https://studyos-ai-psi.vercel.app"),
+        ],
+    )
 
     @app.get("/")
     def index():
