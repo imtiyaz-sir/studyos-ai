@@ -32,7 +32,13 @@ def create_app():
     ):
         app.register_blueprint(bp)
 
-    cors_after_request(app, origins=os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173"))
+    cors_after_request(
+    app,
+    origins=[
+        "http://localhost:5173",
+        os.environ.get("FRONTEND_ORIGIN", "https://studyos-ai-psi.vercel.app"),
+    ],
+)
 
     @app.get("/")
     def index():
