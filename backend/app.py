@@ -20,12 +20,13 @@ from routes.ai import ai_bp
 
 def create_app():
     app = Flask(__name__)
-    app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+   
     app.config.update(
+    SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret-change-me"),
     SESSION_COOKIE_SAMESITE="None",
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    )
+)
 
     for bp in (
         auth_bp, subjects_bp, tasks_bp, revision_bp, practice_bp, habits_bp,
