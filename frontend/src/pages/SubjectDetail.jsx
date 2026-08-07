@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Plus, ChevronDown, ChevronRight as ChevronRightIcon, Trash2,
-  CheckCircle2, Circle, CircleDot, Clock, Layers,
+  CheckCircle2, Circle, CircleDot, Clock, Layers, MoreVertical, Edit2, PlusCircle
 } from "lucide-react";
 import Topbar from "../components/Topbar";
 import { SkeletonList } from "../components/Skeleton";
@@ -21,13 +21,27 @@ const STATUS_COLOR = {
   completed: "text-emerald-500",
 };
 
-function TopicRow({ topic, onCycleStatus, onDelete, depth = 0 }) {
+function TopicRow({ topic, onCycleStatus, onDelete, onEdit, onAddSubtopic, depth = 0 }) {
   const Icon = STATUS_ICON[topic.status];
   const isSubtopic = depth > 0;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
   return (
     <div className={isSubtopic ? "ml-4 border-l border-black/5 dark:border-white/5" : ""}>
       <div
-        className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-surface-sunken group"
+        className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-surface-sunken group relative"
         style={{ paddingLeft: isSubtopic ? 14 : 8 }}
       >
         <span className={cx("text-xs shrink-0 select-none", isSubtopic ? "text-ink-faint" : "text-ink-muted")}>
@@ -55,15 +69,50 @@ function TopicRow({ topic, onCycleStatus, onDelete, depth = 0 }) {
             {topic.confidence_level}%
           </span>
         )}
-        <button
-          onClick={() => onDelete(topic)}
-          className="opacity-0 group-hover:opacity-100 text-ink-faint hover:text-rose-500 transition-opacity shrink-0"
-        >
-          <Trash2 size={14} />
-        </button>
+
+        {/* Three Dots Menu Button */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="opacity-0 group-hover:opacity-100 text-ink-faint hover:text-ink transition-opacity p-1 rounded-md"
+          >
+            <MoreVertical size={15} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 mt-1 w-36 bg-surface-raised border border-black/10 dark:border-white/10 rounded-xl shadow-lg py-1 z-20">
+              <button
+                onClick={() => { setMenuOpen(false); onEdit(topic); }}
+                className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface-sunken text-ink"
+              >
+                <Edit2 size={13} /> Edit
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onAddSubtopic(topic); }}
+                className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface-sunken text-ink"
+              >
+                <PlusCircle size={13} /> Add Subtopic
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onDelete(topic); }}
+                className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-surface-sunken text-rose-500"
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       {topic.subtopics?.map((st) => (
-        <TopicRow key={st.id} topic={st} onCycleStatus={onCycleStatus} onDelete={onDelete} depth={depth + 1} />
+        <TopicRow
+          key={st.id}
+          topic={st}
+          onCycleStatus={onCycleStatus}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          onAddSubtopic={onAddSubtopic}
+          depth={depth + 1}
+        />
       ))}
     </div>
   );
@@ -75,7 +124,10 @@ export default function SubjectDetail() {
   const [subject, setSubject] = useState(null);
   const [error, setError] = useState("");
   const [unitModal, setUnitModal] = useState(false);
-  const [topicModal, setTopicModal] = useState(null); // unit_id or null
+  const [topicModal, setTopicModal] = useState(null); // unit_id or parent_topic_id
+  const [isSubtopicMode, setIsSubtopicMode] = useState(false);
+  const [editingTopic, setEditingTopic] = useState(null);
+  
   const [unitName, setUnitName] = useState("");
   const [topicForm, setTopicForm] = useState({ name: "", priority: "medium", difficulty: "medium", estimated_hours: 2 });
   const [collapsed, setCollapsed] = useState({});
@@ -93,7 +145,6 @@ export default function SubjectDetail() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const addUnit = async (e) => {
@@ -105,13 +156,39 @@ export default function SubjectDetail() {
     load();
   };
 
-  const addTopic = async (e) => {
+  const handleTopicSubmit = async (e) => {
     e.preventDefault();
-    if (!topicForm.name.trim() || !topicModal) return;
-    await api.post(`/api/subjects/units/${topicModal}/topics`, topicForm);
+    if (!topicForm.name.trim()) return;
+
+    if (editingTopic) {
+      await api.put(`/api/subjects/topics/${editingTopic.id}`, { name: topicForm.name });
+      toast("Topic updated successfully");
+    } else if (isSubtopicMode && topicModal) {
+      await api.post(`/api/subjects/topics/${topicModal}/subtopics`, topicForm);
+      toast("Subtopic added successfully");
+    } else if (topicModal) {
+      await api.post(`/api/subjects/units/${topicModal}/topics`, topicForm);
+      toast("Topic added successfully");
+    }
+
     setTopicForm({ name: "", priority: "medium", difficulty: "medium", estimated_hours: 2 });
     setTopicModal(null);
+    setEditingTopic(null);
+    setIsSubtopicMode(false);
     load();
+  };
+
+  const openEditModal = (topic) => {
+    setEditingTopic(topic);
+    setTopicForm({ ...topicForm, name: topic.name });
+    setTopicModal(true);
+  };
+
+  const openAddSubtopicModal = (topic) => {
+    setIsSubtopicMode(true);
+    setTopicModal(topic.id);
+    setEditingTopic(null);
+    setTopicForm({ name: "", priority: "medium", difficulty: "medium", estimated_hours: 2 });
   };
 
   const cycleStatus = async (topic) => {
@@ -238,7 +315,12 @@ export default function SubjectDetail() {
                   </div>
                   <ProgressRing value={u.completion_pct} size={38} stroke={4} />
                   <button
-                    onClick={() => setTopicModal(u.id)}
+                    onClick={() => {
+                      setIsSubtopicMode(false);
+                      setEditingTopic(null);
+                      setTopicForm({ name: "", priority: "medium", difficulty: "medium", estimated_hours: 2 });
+                      setTopicModal(u.id);
+                    }}
                     className="btn-icon"
                     title="Add topic"
                   >
@@ -255,7 +337,14 @@ export default function SubjectDetail() {
                       <p className="text-xs text-ink-faint py-3 px-2">No topics yet — add one to get started.</p>
                     ) : (
                       u.topics.map((t) => (
-                        <TopicRow key={t.id} topic={t} onCycleStatus={cycleStatus} onDelete={setConfirmTopic} />
+                        <TopicRow
+                          key={t.id}
+                          topic={t}
+                          onCycleStatus={cycleStatus}
+                          onDelete={setConfirmTopic}
+                          onEdit={openEditModal}
+                          onAddSubtopic={openAddSubtopicModal}
+                        />
                       ))
                     )}
                   </div>
@@ -278,8 +367,8 @@ export default function SubjectDetail() {
         </form>
       </Modal>
 
-      <Modal open={!!topicModal} onClose={() => setTopicModal(null)} title="Add Topic">
-        <form onSubmit={addTopic} className="space-y-4">
+      <Modal open={!!topicModal} onClose={() => { setTopicModal(null); setEditingTopic(null); setIsSubtopicMode(false); }} title={editingTopic ? "Edit Topic" : isSubtopicMode ? "Add Subtopic" : "Add Topic"}>
+        <form onSubmit={handleTopicSubmit} className="space-y-4">
           <div>
             <label className="label">Topic name</label>
             <input
@@ -290,47 +379,51 @@ export default function SubjectDetail() {
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Priority</label>
-              <select
-                className="input"
-                value={topicForm.priority}
-                onChange={(e) => setTopicForm({ ...topicForm, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Difficulty</label>
-              <select
-                className="input"
-                value={topicForm.difficulty}
-                onChange={(e) => setTopicForm({ ...topicForm, difficulty: e.target.value })}
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="label flex items-center gap-1">
-              <Clock size={12} /> Estimated hours
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.5"
-              className="input"
-              value={topicForm.estimated_hours}
-              onChange={(e) => setTopicForm({ ...topicForm, estimated_hours: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
+          {!editingTopic && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Priority</label>
+                  <select
+                    className="input"
+                    value={topicForm.priority}
+                    onChange={(e) => setTopicForm({ ...topicForm, priority: e.target.value })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Difficulty</label>
+                  <select
+                    className="input"
+                    value={topicForm.difficulty}
+                    onChange={(e) => setTopicForm({ ...topicForm, difficulty: e.target.value })}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label flex items-center gap-1">
+                  <Clock size={12} /> Estimated hours
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  className="input"
+                  value={topicForm.estimated_hours}
+                  onChange={(e) => setTopicForm({ ...topicForm, estimated_hours: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </>
+          )}
           <button type="submit" className="btn-primary w-full">
-            Add Topic
+            {editingTopic ? "Update Topic" : isSubtopicMode ? "Add Subtopic" : "Add Topic"}
           </button>
         </form>
       </Modal>
