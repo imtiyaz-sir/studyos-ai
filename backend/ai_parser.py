@@ -1,10 +1,5 @@
 import re
 
-UNIT_RE = re.compile(
-    r"^(?:UNIT|MODULE|CHAPTER|PART|\d+[\.\-\)]?)\s*([IVXLCDM]+|\d+)?\s*[:.-]?\s*(.*)$",
-    re.IGNORECASE,
-)
-
 def clean(text):
     text = text.replace("\r", "").replace("\n", " ")
     text = re.sub(r"\s+", " ", text)
@@ -16,71 +11,74 @@ def ai_parse_syllabus(text):
     subject = "Imported Subject"
     units = []
     current_unit = None
-    seen_unit = False
+    unit_counter = 1
 
     for line in lines:
-        m = UNIT_RE.match(line)
-
-        if m and len(line) < 60:
-            seen_unit = True
-            unit_num = m.group(1) or f"U{len(units)+1}"
-            unit_title = m.group(2) or line
-
+        # Detect Unit headers (e.g., "UNIT 1", "Unit I", "Module 2", "Chapter 1")
+        unit_match = re.search(r"\b(unit|module|chapter|part)\s*[-:]?\s*([ivxlcdm]+|\d+)(?:\s*[:.-]\s*(.*))?", line, re.I)
+        
+        if unit_match or (re.match(r"^\d+[\.\-\)]\s+[A-Z]", line) and len(line) < 50):
+            unit_title = unit_match.group(3) if unit_match and unit_match.group(3) else line
             current_unit = {
-                "name": f"UNIT {unit_num}".strip(),
+                "name": f"UNIT {unit_counter}",
                 "title": clean(unit_title),
                 "topics": []
             }
             units.append(current_unit)
+            unit_counter += 1
             continue
 
-        if not seen_unit:
+        # If no unit has started yet, check if it's the subject name
+        if not units:
             if len(line) > 3 and not re.search(r"\bsemester\b|\bcredits?\b|\bmarks?\b|\bhours?\b", line, re.I):
                 subject = line
             continue
 
         if current_unit is None:
             current_unit = {
-                "name": "UNIT 1",
+                "name": f"UNIT {unit_counter}",
                 "title": "General Topics",
                 "topics": []
             }
             units.append(current_unit)
+            unit_counter += 1
 
+        # Skip metadata lines
         if re.search(r"\bcredits?\b|\bmarks?\b|\bsemester\b|\bhours?\b|\bpage\b|\btotal\b", line, re.I):
             continue
 
-        # Split multiple topics if separated by semicolons or bullets
+        # Split multiple topics separated by bullets, semicolons, or commas if long
         parts = re.split(r'[;•●]', line)
         for part in parts:
             part = clean(part)
-            if not part:
+            if not part or len(part) < 2:
                 continue
             
             subtopics = []
             title = part
 
-            # Intelligent splitting for Subtopics using colon or dash
+            # Check for colon or dash separating main topic and subtopics
             if ":" in part:
                 t_part, s_part = part.split(":", 1)
                 title = clean(t_part)
-                # Split subtopics by comma
-                subtopics = [clean(s) for s in s_part.split(",") if clean(s)]
-            elif "—" in part:
-                t_part, s_part = part.split("—", 1)
+                subtopics = [clean(s) for s in re.split(r'[,/]', s_part) if clean(s)]
+            elif "—" in part or " - " in part:
+                splitter = "—" if "—" in part else " - "
+                t_part, s_part = part.split(splitter, 1)
                 title = clean(t_part)
-                subtopics = [clean(s) for s in s_part.split(",") if clean(s)]
+                subtopics = [clean(s) for s in re.split(r'[,/]', s_part) if clean(s)]
 
             current_unit["topics"].append({
                 "title": title,
                 "subtopics": subtopics
             })
 
+    # Fallback if nothing structured was found
     if not units:
         units.append({
             "name": "UNIT 1",
             "title": "Full Syllabus",
-            "topics": [{"title": l, "subtopics": []} for l in lines if len(l) > 3]
+            "topics": [{"title": l, "subtopics": []} for l in lines if len(l) > 2]
         })
 
     return {

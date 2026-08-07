@@ -178,6 +178,32 @@ def create_topic(unit_id):
     )
     return jsonify({"topic": query("SELECT * FROM topics WHERE id = ?", (tid,), one=True)}), 201
 
+@subjects_bp.post("/topics/<int:parent_id>/subtopics")
+@login_required
+def create_subtopic(parent_id):
+    """Create a subtopic under a parent topic, automatically inheriting its unit_id."""
+    data = request.get_json(force=True) or {}
+    
+    # Parent topic se unit_id nikalna taaki subtopic usi unit ke andar save ho
+    parent = query("SELECT unit_id FROM topics WHERE id = ?", (parent_id,), one=True)
+    if not parent:
+        return jsonify({"error": "Parent topic not found."}), 404
+
+    tid = execute(
+        """INSERT INTO topics (unit_id, parent_topic_id, name, priority, difficulty, estimated_hours)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (
+            parent["unit_id"],
+            parent_id,
+            data.get("name", "Untitled Subtopic"),
+            data.get("priority", "medium"),
+            data.get("difficulty", "medium"),
+            data.get("estimated_hours", 0),
+        ),
+    )
+    return jsonify({"topic": query("SELECT * FROM topics WHERE id = ?", (tid,), one=True)}), 201
+
+
 
 @subjects_bp.put("/topics/<int:topic_id>")
 @login_required
