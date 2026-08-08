@@ -3,9 +3,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, CheckSquare, RotateCcw, Grid3x3, X,
   ListTree, PenTool, GraduationCap, CalendarDays, NotebookText, Sparkles,
-  Target, BarChart3, Bot, Settings,
+  Target, BarChart3, Bot, Settings, ShieldCheck,
 } from "lucide-react";
 import { cx } from "../lib/utils";
+import { useAuth } from "../context/AuthContext";
 
 const PRIMARY = [
   { to: "/", label: "Home", icon: LayoutDashboard },
@@ -30,6 +31,7 @@ const MORE = [
 export default function BottomNav() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <>
@@ -46,7 +48,10 @@ export default function BottomNav() {
               </button>
             </div>
             <div className="grid grid-cols-4 gap-3">
-              {MORE.map(({ to, label, icon: Icon }) => (
+              {[
+                ...MORE,
+                ...(user?.is_admin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+              ].map(({ to, label, icon: Icon }) => (
                 <button
                   key={to}
                   onClick={() => {

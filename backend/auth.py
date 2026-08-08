@@ -24,7 +24,7 @@ VERIFY_TOKEN_HOURS = 24
 
 USER_FIELDS = (
     "id, name, email, theme, accent_color, xp, coins, level, current_streak, "
-    "longest_streak, daily_revision_goal, is_verified"
+    "longest_streak, daily_revision_goal, is_verified, is_admin"
 )
 
 
@@ -39,6 +39,20 @@ def login_required(fn):
 
 def current_user_id():
     return session.get("user_id")
+
+
+def admin_required(fn):
+    """Require an authenticated user whose database record has is_admin=true."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Not authenticated"}), 401
+        user = query("SELECT is_admin FROM users WHERE id = ?", (user_id,), one=True)
+        if not user or not user["is_admin"]:
+            return jsonify({"error": "Admin access required."}), 403
+        return fn(*args, **kwargs)
+    return wrapper
 
 
 def _get_user(user_id):

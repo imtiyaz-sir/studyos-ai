@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, ListTree, CheckSquare, RotateCcw, PenTool,
   GraduationCap, CalendarDays, NotebookText, Sparkles, Target, BarChart3,
-  Bot, Settings, Flame, LogOut,
+  Bot, Settings, Flame, LogOut, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { cx } from "../lib/utils";
@@ -81,6 +81,26 @@ export default function Sidebar() {
             </div>
           </div>
         ))}
+        {user?.is_admin && (
+          <div>
+            <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Administration
+            </p>
+            <NavLink
+              to="/admin"
+              end
+              className={({ isActive }) =>
+                cx(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
+                  isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                )
+              }
+            >
+              <ShieldCheck size={17} />
+              Admin
+            </NavLink>
+          </div>
+        )}
       </nav>
 
       <div className="p-3 border-t border-black/5 dark:border-white/5 space-y-1">

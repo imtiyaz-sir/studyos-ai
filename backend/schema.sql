@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_active_date TEXT,
     daily_revision_goal INTEGER DEFAULT 3,
     is_verified     INTEGER DEFAULT 0,
+    is_admin        BOOLEAN NOT NULL DEFAULT FALSE,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until    TEXT,
     created_at      TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS')

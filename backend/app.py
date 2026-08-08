@@ -19,6 +19,7 @@ from routes.dashboard import dashboard_bp
 from routes.ai import ai_bp
 from routes.import_syllabus import import_syllabus_bp
 from routes.preview_syllabus import preview_bp
+from routes.admin import admin_bp
 
 # Endpoints unverified users may still hit even though they can't create/edit/delete
 # data elsewhere — auth itself, plus read-only GETs, must always stay reachable.
@@ -49,6 +50,7 @@ def create_app():
         exams_bp,
         dashboard_bp,
         ai_bp,
+        admin_bp,
     ):
         app.register_blueprint(bp)
 
