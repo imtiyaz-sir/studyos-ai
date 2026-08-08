@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, BookOpen, ListTree, CheckSquare, RotateCcw, PenTool,
+  LayoutDashboard, BookOpen, ListTree, CheckSquare, RotateCcw, PenTool, Users,
   GraduationCap, CalendarDays, NotebookText, Sparkles, Target, BarChart3,
   Bot, Settings, Flame, LogOut, ShieldCheck,
 } from "lucide-react";
@@ -86,19 +86,48 @@ export default function Sidebar() {
             <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
               Administration
             </p>
-            <NavLink
-              to="/admin"
-              end
-              className={({ isActive }) =>
-                cx(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
-                  isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-                )
-              }
-            >
-              <ShieldCheck size={17} />
-              Admin
-            </NavLink>
+
+            <div className="space-y-0.5">
+              <NavLink
+                to="/admin"
+                end
+                className={({ isActive }) =>
+                  cx(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
+                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                  )
+                }
+              >
+                <ShieldCheck size={17} />
+                Dashboard
+              </NavLink>
+
+              <NavLink
+                to="/admin/users"
+                className={({ isActive }) =>
+                  cx(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
+                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                  )
+                }
+              >
+                <Users size={17} />
+                Users
+              </NavLink>
+
+              <NavLink
+                to="/admin/syllabus"
+                className={({ isActive }) =>
+                  cx(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
+                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                  )
+                }
+              >
+                <ListTree size={17} />
+                Syllabus
+              </NavLink>
+            </div>
           </div>
         )}
       </nav>
