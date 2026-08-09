@@ -1048,3 +1048,100 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+
+def run():
+    print("[demo-seed] Starting production demo seed...")
+
+    # Make sure the PostgreSQL schema exists.
+    init_db()
+
+    # ------------------------------------------------------------
+    # Reset ONLY the demo account.
+    #
+    # All child records reference users(id) with ON DELETE CASCADE,
+    # so deleting this one user removes only the demo user's data.
+    # No real/student account is touched.
+    # ------------------------------------------------------------
+    existing = get_demo_user()
+
+    if existing:
+        print("[demo-seed] Existing demo account found. Resetting demo data...")
+        execute(
+            "DELETE FROM users WHERE id = ?",
+            (existing["id"],),
+        )
+
+    # ------------------------------------------------------------
+    # Create fresh demo account
+    # ------------------------------------------------------------
+    uid = execute(
+        """
+        INSERT INTO users
+        (
+            name,
+            email,
+            password_hash,
+            theme,
+            accent_color,
+            xp,
+            coins,
+            level,
+            current_streak,
+            longest_streak,
+            daily_revision_goal,
+            is_verified,
+            is_admin,
+            is_blocked
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "Demo Student",
+            DEMO_EMAIL,
+            generate_password_hash(DEMO_PASSWORD),
+            "light",
+            "indigo",
+            1240,
+            340,
+            3,
+            5,
+            12,
+            5,
+            1,
+            False,
+            False,
+        ),
+    )
+
+    print(f"[demo-seed] Demo user created with id={uid}")
+
+    # ------------------------------------------------------------
+    # Populate every major StudyOS feature
+    # ------------------------------------------------------------
+    subject_ids = seed_subjects(uid)
+
+    seed_tasks(uid, subject_ids)
+    seed_habits(uid)
+    seed_skills(uid)
+    seed_goals(uid)
+    seed_notes(uid, subject_ids)
+    seed_exams(uid, subject_ids)
+    seed_calendar(uid, subject_ids)
+    seed_practice(uid)
+    seed_daily_stats(uid)
+
+    print("")
+    print("==============================================")
+    print(" StudyOS AI demo seed completed successfully")
+    print("==============================================")
+    print(f" Email:    {DEMO_EMAIL}")
+    print(f" Password: {DEMO_PASSWORD}")
+    print(" Demo data: subjects, topics, revisions, tasks,")
+    print(" habits, skills, goals, notes, exams, calendar,")
+    print(" practice sessions and analytics.")
+    print("==============================================")
+
+
+if __name__ == "__main__":
+    run()
