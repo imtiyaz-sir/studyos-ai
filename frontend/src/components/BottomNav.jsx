@@ -28,10 +28,13 @@ const MORE = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const ADMIN_ITEM = { to: "/admin", label: "Admin", icon: ShieldCheck };
+
 export default function BottomNav() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const moreItems = user?.is_admin ? [...MORE, ADMIN_ITEM] : MORE;
 
   return (
     <>
@@ -48,10 +51,7 @@ export default function BottomNav() {
               </button>
             </div>
             <div className="grid grid-cols-4 gap-3">
-              {[
-                ...MORE,
-                ...(user?.is_admin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
-              ].map(({ to, label, icon: Icon }) => (
+              {moreItems.map(({ to, label, icon: Icon }) => (
                 <button
                   key={to}
                   onClick={() => {

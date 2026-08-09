@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, BookOpen, ListTree, CheckSquare, RotateCcw, PenTool, Users,
+  LayoutDashboard, BookOpen, ListTree, CheckSquare, RotateCcw, PenTool,
   GraduationCap, CalendarDays, NotebookText, Sparkles, Target, BarChart3,
   Bot, Settings, Flame, LogOut, ShieldCheck,
 } from "lucide-react";
@@ -41,8 +41,14 @@ const SECTIONS = [
   },
 ];
 
+const ADMIN_SECTION = {
+  label: "Admin",
+  items: [{ to: "/admin", label: "Admin Panel", icon: ShieldCheck }],
+};
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const sections = user?.is_admin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS;
 
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-black/5 dark:border-white/5 bg-surface-raised/60 backdrop-blur-md">
@@ -54,7 +60,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label}>
             <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
               {section.label}
@@ -81,55 +87,6 @@ export default function Sidebar() {
             </div>
           </div>
         ))}
-        {user?.is_admin && (
-          <div>
-            <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              Administration
-            </p>
-
-            <div className="space-y-0.5">
-              <NavLink
-                to="/admin"
-                end
-                className={({ isActive }) =>
-                  cx(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
-                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-                  )
-                }
-              >
-                <ShieldCheck size={17} />
-                Dashboard
-              </NavLink>
-
-              <NavLink
-                to="/admin/users"
-                className={({ isActive }) =>
-                  cx(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
-                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-                  )
-                }
-              >
-                <Users size={17} />
-                Users
-              </NavLink>
-
-              <NavLink
-                to="/admin/syllabus"
-                className={({ isActive }) =>
-                  cx(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-ring",
-                    isActive ? "bg-accent/10 text-accent" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-                  )
-                }
-              >
-                <ListTree size={17} />
-                Syllabus
-              </NavLink>
-            </div>
-          </div>
-        )}
       </nav>
 
       <div className="p-3 border-t border-black/5 dark:border-white/5 space-y-1">

@@ -18,6 +18,7 @@ _MIGRATIONS = [
     ("users", "failed_login_attempts", "INTEGER DEFAULT 0"),
     ("users", "locked_until", "TEXT"),
     ("users", "is_admin", "BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("users", "is_blocked", "BOOLEAN NOT NULL DEFAULT FALSE"),
 ]
 
 

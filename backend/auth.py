@@ -37,22 +37,25 @@ def login_required(fn):
     return wrapper
 
 
-def current_user_id():
-    return session.get("user_id")
-
-
 def admin_required(fn):
-    """Require an authenticated user whose database record has is_admin=true."""
+    """Re-verifies admin status against the database on every request — never
+    trusts a client-supplied flag or a value cached from an earlier login.
+    401 if not authenticated at all, 403 if authenticated but not an admin."""
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        user_id = session.get("user_id")
-        if not user_id:
+        if "user_id" not in session:
             return jsonify({"error": "Not authenticated"}), 401
-        user = query("SELECT is_admin FROM users WHERE id = ?", (user_id,), one=True)
-        if not user or not user["is_admin"]:
+        user = query("SELECT is_admin, is_blocked FROM users WHERE id = ?", (session["user_id"],), one=True)
+        if not user or user["is_blocked"]:
+            return jsonify({"error": "Not authenticated"}), 401
+        if not user["is_admin"]:
             return jsonify({"error": "Admin access required."}), 403
         return fn(*args, **kwargs)
     return wrapper
+
+
+def current_user_id():
+    return session.get("user_id")
 
 
 def _get_user(user_id):
@@ -142,6 +145,10 @@ def login():
         return jsonify({"error": f"Invalid email or password. {remaining} attempt{'s' if remaining != 1 else ''} left before lockout."}), 401
 
     execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user["id"],))
+
+    if user["is_blocked"]:
+        return jsonify({"error": "This account has been suspended. Contact support if you believe this is a mistake."}), 403
+
     session.clear()
     session["user_id"] = user["id"]
     session.permanent = remember_me  # permanent uses PERMANENT_SESSION_LIFETIME; otherwise expires when the browser closes

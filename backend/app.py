@@ -23,7 +23,7 @@ from routes.admin import admin_bp
 
 # Endpoints unverified users may still hit even though they can't create/edit/delete
 # data elsewhere — auth itself, plus read-only GETs, must always stay reachable.
-VERIFICATION_EXEMPT_PREFIXES = ("/api/auth/",)
+VERIFICATION_EXEMPT_PREFIXES = ("/api/auth/", "/api/admin/")
 
 
 def create_app():
@@ -50,13 +50,13 @@ def create_app():
         exams_bp,
         dashboard_bp,
         ai_bp,
-        admin_bp,
     ):
         app.register_blueprint(bp)
 
     app.register_blueprint(import_syllabus_bp)
     
     app.register_blueprint(preview_bp)
+    app.register_blueprint(admin_bp)
     cors_after_request(
         app,
         origins=os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173"),

@@ -21,11 +21,13 @@ import Goals from "./pages/Goals";
 import Analytics from "./pages/Analytics";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from "./pages/Settings";
+import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import AdminUserDetail from "./pages/AdminUserDetail";
-import AdminSyllabus from "./pages/AdminSyllabus";
+
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminSyllabus from "./pages/admin/AdminSyllabus";
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -35,19 +37,17 @@ function RequireAuth({ children }) {
   return children;
 }
 
+// Frontend gating is UX-only — the real security boundary is the
+// @admin_required decorator on every /api/admin/* backend route, which
+// re-checks is_admin against the database on every request regardless of
+// what this component does. This just avoids showing a student a flash of
+// admin UI before redirecting them.
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
-
   if (loading) return <Loader full />;
-
-  if (!user) return <Navigate to="/login" replace />;
-
-  if (!user.is_admin) return <Navigate to="/" replace />;
-
+  if (!user?.is_admin) return <AccessDenied />;
   return children;
 }
-
-
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -83,20 +83,11 @@ export default function App() {
         <Route path="analytics" element={<Analytics />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
         <Route path="settings" element={<Settings />} />
-      </Route>
 
-      <Route
-        path="/admin"
-        element={
-          <RequireAdmin>
-            <AppShell />
-          </RequireAdmin>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="users/:id" element={<AdminUserDetail />} />
-        <Route path="syllabus" element={<AdminSyllabus />} />
+        <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+        <Route path="admin/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
+        <Route path="admin/users/:id" element={<RequireAdmin><AdminUserDetail /></RequireAdmin>} />
+        <Route path="admin/syllabus" element={<RequireAdmin><AdminSyllabus /></RequireAdmin>} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
