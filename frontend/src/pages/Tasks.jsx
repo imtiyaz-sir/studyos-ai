@@ -41,8 +41,33 @@ export default function Tasks() {
   };
 
   const toggleDone = async (t) => {
-    await api.put(`/api/tasks/${t.id}`, { status: t.status === "done" ? "pending" : "done" });
-    load();
+    const nextStatus = t.status === "done" ? "pending" : "done";
+
+    // Update UI immediately
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === t.id
+          ? { ...task, status: nextStatus }
+          : task
+      )
+    );
+
+    try {
+      await api.put(`/api/tasks/${t.id}`, {
+        status: nextStatus,
+      });
+    } catch (error) {
+      // Roll back if the server failed
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === t.id
+            ? { ...task, status: t.status }
+            : task
+        )
+      );
+
+      toast("Couldn't save task. Please try again.");
+    }
   };
 
   const confirmDelete = async () => {
