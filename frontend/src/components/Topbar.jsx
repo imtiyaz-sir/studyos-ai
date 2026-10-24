@@ -1,5 +1,6 @@
 import { Moon, Sun, Flame, Zap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 export default function Topbar({ title, subtitle, actions }) {
   const { user, updatePrefs } = useAuth();
@@ -22,6 +23,7 @@ export default function Topbar({ title, subtitle, actions }) {
             <Zap size={14} className="text-accent" />
             <span className="text-xs font-mono font-medium pr-1.5">{user?.xp ?? 0}</span>
           </div>
+          <NotificationBell />
           <button
             onClick={() => updatePrefs({ theme: isDark ? "light" : "dark" })}
             className="btn-icon"

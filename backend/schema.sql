@@ -267,7 +267,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     id              SERIAL PRIMARY KEY,
     user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type            TEXT NOT NULL,   -- revision | assignment | exam | habit | goal | practice | system
+    title           TEXT,
     message         TEXT NOT NULL,
+    link            TEXT,            -- same-site relative path only (validated in routes/notifications.py)
+    dedupe_key      TEXT,
     is_read         INTEGER DEFAULT 0,
     scheduled_for   TEXT,
     created_at      TEXT DEFAULT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS')

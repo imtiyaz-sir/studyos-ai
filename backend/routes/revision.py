@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from database import query, execute
 from auth import login_required, current_user_id
+from ownership import owns_topic, owns_revision
 from stats_utils import bump_daily_stat
 
 revision_bp = Blueprint("revision", __name__, url_prefix="/api/revision")
@@ -32,6 +33,8 @@ def due_today():
 @revision_bp.get("/topic/<int:topic_id>")
 @login_required
 def list_for_topic(topic_id):
+    if not owns_topic(topic_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     rows = query("SELECT * FROM revisions WHERE topic_id = ? ORDER BY revision_number", (topic_id,))
     return jsonify({"revisions": rows})
 
@@ -42,6 +45,8 @@ def schedule_first_revision(topic_id):
     """Kick off (or return) the spaced-repetition plan for a topic. Idempotent —
     calling this on a topic that already has a plan just returns it, so the
     'Mark for Revision' button in the UI can be pressed safely more than once."""
+    if not owns_topic(topic_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     existing = query("SELECT * FROM revisions WHERE topic_id = ? ORDER BY revision_number", (topic_id,))
     if existing:
         return jsonify({"revisions": existing, "already_scheduled": True})
@@ -65,6 +70,8 @@ def schedule_first_revision(topic_id):
 def mark_revised(topic_id):
     """Completes the earliest pending revision for a topic — or starts a plan
     and immediately completes its first stage if none exists yet."""
+    if not owns_topic(topic_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(silent=True) or {}
     memory_strength = data.get("memory_strength", 80)
     confidence_level = data.get("confidence_level", 80)
@@ -102,6 +109,8 @@ def mark_revised(topic_id):
 @revision_bp.put("/<int:revision_id>")
 @login_required
 def update_revision(revision_id):
+    if not owns_revision(revision_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     fields, args = [], []
     for col in ("notes", "difficulty", "scheduled_date"):

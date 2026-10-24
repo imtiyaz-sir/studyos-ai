@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from database import query, execute
 from auth import login_required, current_user_id
+from ownership import owns_subject, owns_unit, owns_topic
 
 subjects_bp = Blueprint("subjects", __name__, url_prefix="/api/subjects")
 
@@ -128,6 +129,8 @@ def delete_subject(subject_id):
 @subjects_bp.post("/<int:subject_id>/units")
 @login_required
 def create_unit(subject_id):
+    if not owns_subject(subject_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     uid = execute(
         "INSERT INTO units (subject_id, name, order_index) VALUES (?, ?, ?)",
@@ -139,6 +142,8 @@ def create_unit(subject_id):
 @subjects_bp.put("/units/<int:unit_id>")
 @login_required
 def update_unit(unit_id):
+    if not owns_unit(unit_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     fields, args = [], []
     for col in ("name", "order_index"):
@@ -155,6 +160,8 @@ def update_unit(unit_id):
 @subjects_bp.delete("/units/<int:unit_id>")
 @login_required
 def delete_unit(unit_id):
+    if not owns_unit(unit_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     execute("DELETE FROM units WHERE id = ?", (unit_id,))
     return jsonify({"ok": True})
 
@@ -163,6 +170,8 @@ def delete_unit(unit_id):
 @subjects_bp.post("/units/<int:unit_id>/topics")
 @login_required
 def create_topic(unit_id):
+    if not owns_unit(unit_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     tid = execute(
         """INSERT INTO topics (unit_id, parent_topic_id, name, priority, difficulty, estimated_hours)
@@ -182,6 +191,8 @@ def create_topic(unit_id):
 @login_required
 def create_subtopic(parent_id):
     """Create a subtopic under a parent topic, automatically inheriting its unit_id."""
+    if not owns_topic(parent_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     
     # Parent topic se unit_id nikalna taaki subtopic usi unit ke andar save ho
@@ -208,6 +219,8 @@ def create_subtopic(parent_id):
 @subjects_bp.put("/topics/<int:topic_id>")
 @login_required
 def update_topic(topic_id):
+    if not owns_topic(topic_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     data = request.get_json(force=True) or {}
     fields, args = [], []
     editable = (
@@ -228,5 +241,7 @@ def update_topic(topic_id):
 @subjects_bp.delete("/topics/<int:topic_id>")
 @login_required
 def delete_topic(topic_id):
+    if not owns_topic(topic_id, current_user_id()):
+        return jsonify({"error": "Not found"}), 404
     execute("DELETE FROM topics WHERE id = ?", (topic_id,))
     return jsonify({"ok": True})

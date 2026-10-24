@@ -87,3 +87,21 @@ production deploy. Before shipping publicly you'd want to add: rate limiting,
 CSRF protection on state-changing routes, input validation beyond basic
 required-field checks, a production WSGI server (gunicorn/uwsgi) instead of
 the Flask dev server, and migration to PostgreSQL.
+
+## Scheduled reminders (tomorrow's plan, exam countdown, streak)
+
+`run_reminders.py` creates in-app notifications (shown in the bell in the top bar).
+Every reminder is de-duplicated, so a job can safely run twice.
+
+```bash
+python run_reminders.py plan     # tomorrow's tasks + revisions due   (run ~9 PM)
+python run_reminders.py exam     # 30/14/7/3/2/1 days and exam day    (run ~7 AM)
+python run_reminders.py streak   # "streak ends today" warning        (run ~8 PM)
+```
+
+Servers run in UTC; set `APP_TIMEZONE` (default `Asia/Kolkata`) so "tomorrow" is correct.
+Cron expressions are UTC. For IST: plan `30 15 * * *`, streak `30 14 * * *`, exam `30 1 * * *`.
+On Render: create three **Cron Job** services with the same repo/env vars (`DATABASE_URL`, `APP_TIMEZONE`)
+and the commands above. The app itself doesn't need to be running for these to fire.
+
+Note: these appear inside the app only. Phone push (notification when the app is closed) needs Web Push (VAPID) — not yet implemented.

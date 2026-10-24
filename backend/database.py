@@ -19,6 +19,14 @@ _MIGRATIONS = [
     ("users", "locked_until", "TEXT"),
     ("users", "is_admin", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ("users", "is_blocked", "BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("notifications", "title", "TEXT"),
+    ("notifications", "link", "TEXT"),
+    ("notifications", "dedupe_key", "TEXT"),
+]
+
+# Indexes that depend on migrated columns, so they must run after _MIGRATIONS.
+_INDEX_MIGRATIONS = [
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_notifications_dedupe ON notifications(user_id, dedupe_key) WHERE dedupe_key IS NOT NULL",
 ]
 
 
@@ -57,6 +65,8 @@ def init_db():
         with conn.cursor() as cur:
             for table, column, coltype in _MIGRATIONS:
                 cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {coltype}")
+            for stmt in _INDEX_MIGRATIONS:
+                cur.execute(stmt)
         conn.commit()
         print("[database] Schema + migrations applied successfully.")
     except Exception as e:

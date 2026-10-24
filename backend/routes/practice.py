@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 
 from database import query, execute
 from auth import login_required, current_user_id
+from ownership import owns_topic
 from stats_utils import bump_daily_stat
 
 practice_bp = Blueprint("practice", __name__, url_prefix="/api/practice")
@@ -25,6 +26,8 @@ def create_session():
     data = request.get_json(force=True) or {}
     if not data.get("type"):
         return jsonify({"error": "Practice type is required."}), 400
+    if data.get("topic_id") and not owns_topic(data["topic_id"], current_user_id()):
+        return jsonify({"error": "Topic not found."}), 404
     sid = execute(
         """INSERT INTO practice_sessions
            (user_id, topic_id, type, total_questions, correct_answers, duration_minutes, notes)

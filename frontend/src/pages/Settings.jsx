@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Moon, Sun, LogOut, User, Palette, Trophy, Lock, Eye, EyeOff, ShieldAlert, Trash2, BadgeCheck, MailWarning } from "lucide-react";
 import Topbar from "../components/Topbar";
 import ConfirmDialog from "../components/ConfirmDialog";
+import InstallCard from "../components/InstallCard";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { cx } from "../lib/utils";
@@ -90,6 +91,8 @@ export default function Settings() {
       <Topbar title="Settings" subtitle="Personalize your StudyOS AI experience." />
 
       <div className="px-4 lg:px-8 py-6 max-w-2xl space-y-5">
+        <InstallCard />
+
         <div className="card p-5">
           <p className="font-display font-semibold text-sm flex items-center gap-1.5 mb-4">
             <User size={15} /> Profile
