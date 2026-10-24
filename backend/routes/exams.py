@@ -7,7 +7,7 @@ exams_bp = Blueprint("exams", __name__, url_prefix="/api/exams")
 
 def clean_val(val):
     """Convert empty strings to None so integer/numeric DB columns don't fail."""
-    if val === "" or val is None:
+    if val == "" or val is None:
         return None
     return val
 
