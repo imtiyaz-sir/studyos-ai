@@ -1,33 +1,34 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import AppShell from "./components/AppShell";
 import Loader from "./components/Loader";
 
 import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetPassword";
-import VerifyEmail from "./pages/VerifyEmail";
-import Dashboard from "./pages/Dashboard";
-import Subjects from "./pages/Subjects";
-import SubjectDetail from "./pages/SubjectDetail";
-import Syllabus from "./pages/Syllabus";
-import Tasks from "./pages/Tasks";
-import Revision from "./pages/Revision";
-import Practice from "./pages/Practice";
-import Exams from "./pages/Exams";
-import CalendarPage from "./pages/CalendarPage";
-import Notes from "./pages/Notes";
-import Skills from "./pages/Skills";
-import Goals from "./pages/Goals";
-import Analytics from "./pages/Analytics";
-import AIAssistant from "./pages/AIAssistant";
-import Settings from "./pages/Settings";
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Subjects = lazy(() => import("./pages/Subjects"));
+const SubjectDetail = lazy(() => import("./pages/SubjectDetail"));
+const Syllabus = lazy(() => import("./pages/Syllabus"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const Revision = lazy(() => import("./pages/Revision"));
+const Practice = lazy(() => import("./pages/Practice"));
+const Exams = lazy(() => import("./pages/Exams"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Skills = lazy(() => import("./pages/Skills"));
+const Goals = lazy(() => import("./pages/Goals"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const AIAssistant = lazy(() => import("./pages/AIAssistant"));
+const Settings = lazy(() => import("./pages/Settings"));
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminUserDetail from "./pages/admin/AdminUserDetail";
-import AdminSyllabus from "./pages/admin/AdminSyllabus";
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
+const AdminSyllabus = lazy(() => import("./pages/admin/AdminSyllabus"));
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -53,6 +54,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   return (
+    <Suspense fallback={<Loader full />}>
     <Routes>
       <Route
         path="/login"
@@ -92,5 +94,6 @@ export default function App() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }

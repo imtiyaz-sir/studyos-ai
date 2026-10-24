@@ -29,6 +29,7 @@ class _Conn:
 fake = types.ModuleType("psycopg"); fake.connect = lambda *a, **k: _Conn()
 rows = types.ModuleType("psycopg.rows"); rows.dict_row = object()
 fake.rows = rows
+fake.OperationalError = type("OperationalError", (Exception,), {})
 sys.modules.setdefault("psycopg", fake); sys.modules.setdefault("psycopg.rows", rows)
 
 SCHEMA = """

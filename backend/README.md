@@ -105,3 +105,12 @@ On Render: create three **Cron Job** services with the same repo/env vars (`DATA
 and the commands above. The app itself doesn't need to be running for these to fire.
 
 Note: these appear inside the app only. Phone push (notification when the app is closed) needs Web Push (VAPID) — not yet implemented.
+
+## Performance notes
+
+- `database.py` keeps a small per-process pool of idle Postgres connections (`DB_POOL_SIZE`, default 5)
+  instead of opening a new connection per query. Keep `gunicorn workers x DB_POOL_SIZE` below your
+  Postgres connection limit.
+- Deploy the API and the database in the **same region**; a cross-region database adds latency to every query.
+- Free-tier hosts (e.g. Render free) put the service to sleep when idle; the first request after a
+  sleep can take 30-60 s regardless of code. Use a paid instance or an uptime ping against `/api/health`.

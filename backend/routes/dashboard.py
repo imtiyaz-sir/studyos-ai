@@ -16,17 +16,16 @@ QUOTES = [
 
 
 def _overall_completion(uid):
-    rows = query(
-        """SELECT t.status FROM topics t
+    row = query(
+        """SELECT COUNT(*) AS total,
+                  COALESCE(SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END), 0) AS done
+           FROM topics t
            JOIN units u ON u.id = t.unit_id
            JOIN subjects s ON s.id = u.subject_id
            WHERE s.user_id = ?""",
-        (uid,),
+        (uid,), one=True,
     )
-    if not rows:
-        return 0
-    done = sum(1 for r in rows if r["status"] == "completed")
-    return round(done / len(rows) * 100)
+    return round(row["done"] / row["total"] * 100) if row["total"] else 0
 
 
 @dashboard_bp.get("/summary")

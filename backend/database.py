@@ -1,4 +1,5 @@
 import os
+import queue
 import re
 from pathlib import Path
 import psycopg
@@ -30,11 +31,87 @@ _INDEX_MIGRATIONS = [
 ]
 
 
+# ── Connection pool ─────────────────────────────────────────────
+# Opening a Postgres connection (TCP + TLS + auth) costs 50-300 ms against a
+# hosted database, and every query() used to open a new one — a dashboard load
+# paid that ~11 times. Now finished connections are parked here and reused.
+# This is an *idle cache*, not a limiter: if it is empty we just open a new
+# connection, and extras beyond DB_POOL_SIZE are closed. Size is per process
+# (gunicorn workers x DB_POOL_SIZE must stay under your Postgres connection limit).
+_POOL_SIZE = int(os.environ.get("DB_POOL_SIZE", "5"))
+_idle = queue.LifoQueue(maxsize=_POOL_SIZE)
+
+
+class _PooledConn:
+    """Thin proxy over a psycopg connection. close() returns it to the pool
+    instead of closing it, so existing `conn.close()` call sites keep working."""
+
+    def __init__(self, raw):
+        self._raw = raw
+        self.reused = False
+
+    def __getattr__(self, name):
+        return getattr(self._raw, name)
+
+    def usable(self):
+        return not getattr(self._raw, "closed", False) and not getattr(self._raw, "broken", False)
+
+    def discard(self):
+        try:
+            self._raw.close()
+        except Exception:
+            pass
+
+    def close(self):
+        if not self.usable():
+            return self.discard()
+        try:
+            self._raw.rollback()  # never park a connection with an open transaction
+            _idle.put_nowait(self)
+        except Exception:  # pool full, or rollback failed on a dead connection
+            self.discard()
+
+
+def _new_conn():
+    return _PooledConn(psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=10))
+
+
 def get_db():
-    return psycopg.connect(
-        DATABASE_URL,
-        row_factory=dict_row
-    )
+    """Borrow a connection (reused if one is idle). Always finish with conn.close()."""
+    while True:
+        try:
+            conn = _idle.get_nowait()
+        except queue.Empty:
+            return _new_conn()
+        if conn.usable():
+            conn.reused = True
+            return conn
+        conn.discard()
+
+
+def _run(work):
+    """Run work(conn) on a pooled connection. A parked connection can have been
+    dropped by the server while idle; if that is why it fails, retry once on a
+    fresh connection. The connection is always returned/closed — even on error."""
+    for attempt in (0, 1):
+        conn = get_db()
+        try:
+            return work(conn)
+        except psycopg.OperationalError:
+            was_reused = conn.reused
+            conn.discard()
+            conn = None
+            if not was_reused or attempt == 1:
+                raise
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            raise
+        finally:
+            if conn is not None:
+                conn.close()
 
 
 def init_db():
@@ -78,51 +155,41 @@ def init_db():
 
 
 def query(sql, args=(), one=False):
-    conn = get_db()
+    sql = sql.replace("?", "%s")
 
-    with conn.cursor() as cur:
-        sql = sql.replace("?", "%s")
-        cur.execute(sql, args)
-        rows = cur.fetchall()
+    def work(conn):
+        with conn.cursor() as cur:
+            cur.execute(sql, args)
+            return cur.fetchall()
 
-    conn.close()
-
+    rows = _run(work)
     if one:
         return rows[0] if rows else None
-
     return rows
 
 
 def execute(sql, args=()):
-    conn = get_db()
+    sql = sql.replace("?", "%s")
+    is_insert = sql.strip().upper().startswith("INSERT")
+    if is_insert:
+        sql += " RETURNING id"
 
-    with conn.cursor() as cur:
-        sql = sql.replace("?", "%s")
+    def work(conn):
+        with conn.cursor() as cur:
+            cur.execute(sql, args)
+            row = cur.fetchone() if is_insert else None
+            conn.commit()
+            return row["id"] if row else None
 
-        if sql.strip().upper().startswith("INSERT"):
-            sql += " RETURNING id"
-
-        cur.execute(sql, args)
-
-        last_id = None
-
-        if sql.strip().upper().startswith("INSERT"):
-            row = cur.fetchone()
-            last_id = row["id"] if row else None
-
-        conn.commit()
-
-    conn.close()
-
-    return last_id
+    return _run(work)
 
 
 def executemany(sql, seq_of_args):
-    conn = get_db()
+    sql = sql.replace("?", "%s")
 
-    with conn.cursor() as cur:
-        sql = sql.replace("?", "%s")
-        cur.executemany(sql, seq_of_args)
-        conn.commit()
+    def work(conn):
+        with conn.cursor() as cur:
+            cur.executemany(sql, seq_of_args)
+            conn.commit()
 
-    conn.close()
+    _run(work)

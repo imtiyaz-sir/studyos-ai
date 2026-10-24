@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
+import Loader from "./Loader";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import VerifyBanner from "./VerifyBanner";
@@ -11,7 +13,10 @@ export default function AppShell() {
       <div className="flex-1 min-w-0 pb-20 lg:pb-0">
         <ConnectionStatus />
         <VerifyBanner />
-        <Outlet />
+        {/* Keeps sidebar/nav on screen while a page's code chunk downloads */}
+        <Suspense fallback={<Loader />}>
+          <Outlet />
+        </Suspense>
       </div>
       <BottomNav />
     </div>

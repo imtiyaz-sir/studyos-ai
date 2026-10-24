@@ -16,11 +16,19 @@ def _topic_completion(topics):
 
 
 def _build_topic_tree(flat_topics, parent_id=None):
-    """Turn a flat list of topic rows into a nested tree by parent_topic_id."""
-    children = [t for t in flat_topics if t["parent_topic_id"] == parent_id]
-    for c in children:
-        c["subtopics"] = _build_topic_tree(flat_topics, c["id"])
-    return children
+    """Turn a flat list of topic rows into a nested tree by parent_topic_id.
+    Groups once by parent (O(n)); the old version rescanned the whole list per node."""
+    by_parent = {}
+    for t in flat_topics:
+        by_parent.setdefault(t["parent_topic_id"], []).append(t)
+
+    def attach(pid):
+        kids = by_parent.get(pid, [])
+        for k in kids:
+            k["subtopics"] = attach(k["id"])
+        return kids
+
+    return attach(parent_id)
 
 
 @subjects_bp.get("/topics/all")
